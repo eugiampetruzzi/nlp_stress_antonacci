@@ -38,10 +38,18 @@ Multiple NLP representations are generated from participant-only transcripts.
 
 ##### LDA Topic Modeling (DLATK + MALLET)
 
-The updated LDA pipeline uses sentence-level **MALLET LDA**, aggregation to the participant level, and PCA reduction.
+The topic modeling pipeline uses sentence-level **MALLET LDA**, participant-level aggregation, and PCA reduction to derive higher-order thematic components.
 
-* `01_preprocess_transcripts.py`: Sentence tokenization + **DLATK-ready corpus**.
-* `02_lda_to_topics.py`: MALLET LDA ($\sim 500$ topics), exporting topic–word distributions, sentence-level topic proportions, and participant-level topic distributions. (Outputs analyzed in `LDA_Analyses.Rmd`).
+- `01_preprocess_transcripts.py`
+  Sentence-level tokenization and creation of a **DLATK-ready corpus**.
+
+- `02_lda_to_topics.py`
+  Runs **MALLET LDA (~500 topics)** with default symmetric Dirichlet priors (α = 50/T, β = 0.01) and 1,000 Gibbs iterations.  
+  Exports:  
+  - topic–word distributions  
+  - sentence-level topic proportions  
+  - participant-level aggregated topic distributions  
+  *(Outputs are analyzed in `LDA_Analyses.Rmd`.)*
 
 ---
 
@@ -55,11 +63,11 @@ These notebooks reproduce all predictive models and figures in the manuscript.
 
 * **`TF-IDF_Analyses.Rmd`**
     * **Features:** TF-IDF
-    * **Analyses:** Elastic net prediction, PCA identifying the **Function Words component**.
+    * **Analyses:** Elastic net prediction, PCA identifying the Function Words component.
 
 * **`LDA_Analyses.Rmd`**
     * **Features:** LDA Topics (20 PCA-reduced components)
-    * **Analyses:** Elastic net prediction of YSR internalizing at T3, Logistic regression for incident diagnosis, Identification of five retained components, Wordcloud visualization.
+    * **Analyses:** Elastic net prediction Identification of five retained components, Wordcloud visualization.
 
 * **`SentenceEmbedding_Analysis.Rmd`**
     * **Features:** RoBERTa Embeddings
