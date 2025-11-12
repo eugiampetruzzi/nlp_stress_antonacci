@@ -1,87 +1,66 @@
-# nlp_stress_antonacci
+## NLP Stress Project
 
-This repository contains the full pipeline for processing and analyzing TESI (Traumatic Events Screening Inventory) stress interviews from the Early Life Stress, Puberty, and Neural Trajectories (ELS) study in the Stanford Neurodevelopment, Affect, and Psychopathology Laboratory (PI: Ian Gotlib). The workflow spans raw audio transcription, diarization correction, NLP feature generation, and predictive modeling of later internalizing outcomes.
+This repository includes scripts to reproduce the analyses reported in: Antonacci, C., Uy, J. P., Kwan, K., Giampetruzzi, E., Jones, S., Pennebaker, J. W., & Gotlib, I. H. (2025). The language of stress: Leveraging natural language processing to model risk for psychopathology across adolescence. Manuscript Submitted for Publication.
 
-All scripts reproduce the analyses in the manuscript.
+It contains the complete pipeline for processing and analyzing **TESI (Traumatic Events Screening Inventory) stress interviews** from the **Early Life Stress, Puberty, and Neural Trajectories (ELS) study** in the Stanford Neurodevelopment, Affect, and Psychopathology Laboratory (PI: Ian Gotlib). The workflow spans **raw audio transcription**, **speaker correction**, **NLP feature generation**, and **predictive modeling** of internalizing outcomes. 
 
-Workflow Overview
 
-The repository is organized into three main phases:
+---
 
-⸻
+### Workflow Overview
 
-1. Transcription and Parsing
+The pipeline consists of three main phases:
 
-These scripts convert raw audio files into cleaned, participant-only text transcripts, which serve as the input for every NLP method.
+#### 1. Transcription and Parsing
 
-Scripts
-	•	whisperX_batch.sh
-SLURM job-array script for large-scale WhisperX transcription + diarization.
-	•	whisperX_process.py
-Runs WhisperX end-to-end: audio conversion, large-v2 transcription, timestamp alignment, and PyAnnote diarization.
-	•	GPT-4o_Standardized_Prompt.txt
-The standardized GPT-4o prompt used to correct diarization errors (ensuring participant vs. interviewer turns are accurate).
-	•	Speaker_Parsing.py
-Extracts only Participant speech from GPT-4o-corrected transcripts and outputs one cleaned transcript per participant.
+These scripts convert raw audio files into cleaned, **participant-only transcripts**, which serve as the foundation for all NLP analyses.
 
-These participant-only transcripts are the foundation for all NLP feature extraction.
+* `whisperX_batch.sh`: SLURM job-array script for large-scale **WhisperX** transcription and diarization.
+* `whisperX_process.py`: Runs WhisperX: audio conversion, `large-v2` transcription, alignment, and **PyAnnote** diarization.
+* `GPT-4o_Standardized_Prompt.txt`: Standardized **GPT-4o prompt** used to correct diarization errors (ensures participant vs. interviewer turns are accurate).
+* `Speaker_Parsing.py`: Extracts *only Participant speech* and produces the final transcript used across all NLP analyses.
 
-⸻
+---
 
-2. NLP Feature Generation
+#### 2. NLP Feature Generation
 
-Multiple NLP representations are generated from the cleaned participant text.
+Multiple NLP representations are generated from participant-only transcripts.
 
-TF-IDF
-	•	TF-IDF_Generation.py
-Creates a filtered TF-IDF document–term matrix (≥5% document frequency).
+##### TF-IDF Features
 
-RoBERTa Embeddings
-	•	Generate_Embeddings.py
-Produces:
-	•	roberta_embeddings.csv: 768-dimensional mean-pooled embeddings
-	•	sentence_risk_scores.csv: sentence-level projection scores for interpretation
+* `TF-IDF_Generation.py`: Produces a filtered document–term matrix ($\ge 5\%$ document frequency).
 
-LDA Topic Modeling (DLATK + MALLET)
+##### RoBERTa Embeddings
 
-The updated LDA pipeline uses sentence-level LDA, participant-level aggregation, and PCA for dimensionality reduction.
+* `Generate_Embeddings.py` Outputs:
+    * `roberta_embeddings.csv`: 768-dimensional pooled participant embeddings.
+    * `sentence_risk_scores.csv`: Sentence-level projection scores for interpretability.
 
-Scripts:
-	•	01_preprocess_transcripts.py — sentence tokenization + DLATK-ready corpus
-	•	02_lda_to_topics.py — runs MALLET LDA (~500 topics), exports:
-	•	topic–word distributions
-	•	sentence-level topic proportions
-	•	participant-level topic distributions
+##### LDA Topic Modeling (DLATK + MALLET)
 
-These outputs feed directly into LDA_Analyses.Rmd.
+The updated LDA pipeline uses sentence-level **MALLET LDA**, aggregation to the participant level, and PCA reduction.
 
-⸻
+* `01_preprocess_transcripts.py`: Sentence tokenization + **DLATK-ready corpus**.
+* `02_lda_to_topics.py`: MALLET LDA ($\sim 500$ topics), exporting topic–word distributions, sentence-level topic proportions, and participant-level topic distributions. (Outputs analyzed in `LDA_Analyses.Rmd`).
 
-3. Statistical Modeling (R Markdown)
+---
 
-These notebooks reproduce all analyses and figures reported in the manuscript.
+#### 3. Statistical Modeling (R Markdown)
 
-LIWC_Analyses.Rmd
-	•	Baseline LIWC models
-	•	LIWC elastic net prediction
-	•	PCA of LIWC features
+These notebooks reproduce all predictive models and figures in the manuscript.
 
-TF-IDF_Analyses.Rmd
-	•	Elastic net prediction from TF-IDF
-	•	PCA identifying the “Function Words” dimension
+* **`LIWC_Analyses.Rmd`**
+    * **Features:** LIWC
+    * **Analyses:** Baseline LIWC models, Elastic net prediction, PCA of LIWC dimensions.
 
-LDA_Analyses.Rmd
+* **`TF-IDF_Analyses.Rmd`**
+    * **Features:** TF-IDF
+    * **Analyses:** Elastic net prediction, PCA identifying the **Function Words component**.
 
-Uses the 20 PCA-reduced LDA topic components.
+* **`LDA_Analyses.Rmd`**
+    * **Features:** LDA Topics (20 PCA-reduced components)
+    * **Analyses:** Elastic net prediction of YSR internalizing at T3, Logistic regression for incident diagnosis, Identification of five retained components, Wordcloud visualization.
 
-Includes:
-	•	Elastic net prediction of YSR internalizing at T3
-	•	Logistic regression for incident diagnosis
-	•	Retained component identification
-	•	Wordcloud interpretation (risk vs. protective themes)
-
-SentenceEmbedding_Analysis.Rmd
-	•	Elastic net on RoBERTa embeddings
-	•	UMAP/HDBSCAN clustering
-	•	Saving the coefficient vector for sentence-level projections
-	•	Predictive modeling and cluster interpretation
+* **`SentenceEmbedding_Analysis.Rmd`**
+    * **Features:** RoBERTa Embeddings
+    * **Analyses:** Elastic net, UMAP + HDBSCAN clustering, Projection of coefficients onto individual sentences, Interpretive analyses.
