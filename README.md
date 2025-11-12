@@ -1,6 +1,6 @@
 ## NLP Stress Project
 
-This repository includes scripts to reproduce the analyses reported in: Antonacci, C., Uy, J. P., Kwan, K., Giampetruzzi, E., Jones, S., Pennebaker, J. W., & Gotlib, I. H. (2025). The language of stress: Leveraging natural language processing to model risk for psychopathology across adolescence. Manuscript Submitted for Publication.
+This repository includes scripts to reproduce the analyses reported in: Antonacci, C., Uy, J. P., Kwan, K., Giampetruzzi, E., Jones, S., Pennebaker, J. W., & Gotlib, I. H. (2025). **The language of stress: Leveraging natural language processing to model risk for psychopathology across adolescence.** Manuscript Submitted for Publication.
 
 It contains the complete pipeline for processing and analyzing **TESI (Traumatic Events Screening Inventory) stress interviews** from the **Early Life Stress, Puberty, and Neural Trajectories (ELS) study** in the Stanford Neurodevelopment, Affect, and Psychopathology Laboratory (PI: Ian Gotlib). The workflow spans **raw audio transcription**, **speaker correction**, **NLP feature generation**, and **predictive modeling** of internalizing outcomes. 
 
