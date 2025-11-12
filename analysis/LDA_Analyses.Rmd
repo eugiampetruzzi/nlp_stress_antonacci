@@ -1,0 +1,146 @@
+---
+title: "LDA Topic Components and Internalizing Outcomes"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo       = TRUE,
+  message    = FALSE,
+  warning    = FALSE,
+  fig.width  = 7,
+  fig.height = 5
+)
+
+library(tidyverse)
+library(glmnet)
+library(broom)
+library(wordcloud)
+library(scales)
+library(stringr)
+
+topics_wide <- read_csv("data/participant_topic_distribution.csv")
+ysr_data    <- read_csv("data/ysr_internalizing_t3.csv")
+topic_words <- read_csv("data/topic_word_matrix.csv")
+
+analysis_data <- topics_wide %>%
+  inner_join(ysr_data, by = "id")
+
+topic_cols <- str_subset(names(analysis_data), "^topic_")
+
+topic_matrix <- analysis_data %>%
+  select(all_of(topic_cols)) %>%
+  as.matrix()
+
+set.seed(1234)
+
+pca_topics <- prcomp(
+  x      = topic_matrix,
+  center = TRUE,
+  scale. = TRUE
+)
+
+pc_scores <- as_tibble(pca_topics$x[, 1:20]) %>%
+  mutate(id = analysis_data$id) %>%
+  relocate(id)
+
+write_csv(pc_scores, "results/topic_pcs_20.csv")
+
+pc_vars <- paste0("PC", 1:20)
+
+enet_data <- pc_scores %>%
+  inner_join(ysr_data, by = "id") %>%
+  drop_na(internalizing_t3)
+
+x_mat <- enet_data %>%
+  select(all_of(pc_vars)) %>%
+  as.matrix()
+
+y_vec <- enet_data$internalizing_t3
+
+set.seed(1234)
+
+cv_enet <- cv.glmnet(
+  x      = x_mat,
+  y      = y_vec,
+  alpha  = 0.5,
+  family = "gaussian",
+  nfolds = 5
+)
+
+enet_model <- glmnet(
+  x      = x_mat,
+  y      = y_vec,
+  alpha  = 0.5,
+  family = "gaussian",
+  lambda = cv_enet$lambda.min
+)
+
+enet_coefs <- tidy(enet_model) %>%
+  filter(term != "(Intercept)") %>%
+  arrange(desc(abs(estimate)))
+
+write_csv(enet_coefs, "results/elastic_net_internalizing_coefficients.csv")
+
+enet_coefs
+
+retained_pcs <- c("PC1", "PC11", "PC12", "PC19", "PC20")
+
+retained_effects <- enet_coefs %>%
+  filter(term %in% retained_pcs) %>%
+  select(term, estimate) %>%
+  rename(beta_internalizing = estimate)
+
+retained_effects
+
+word_vec <- topic_words$word
+
+topic_word_mat <- topic_words %>%
+  select(all_of(topic_cols)) %>%
+  as.matrix()
+
+pc_rotation <- pca_topics$rotation[, 1:20]
+
+compute_pc_word_loadings <- function(pc_index) {
+  loads <- topic_word_mat %*% pc_rotation[, pc_index]
+  tibble(word = word_vec, loading = as.numeric(loads))
+}
+
+plot_pc_wordcloud <- function(pc_label, beta_pc, max_words = 80) {
+  pc_index <- as.integer(str_remove(pc_label, "PC"))
+
+  load_df <- compute_pc_word_loadings(pc_index) %>%
+    arrange(desc(abs(loading))) %>%
+    slice_head(n = max_words)
+
+  color_vec <- ifelse(load_df$loading * beta_pc > 0, "red", "green")
+
+  wordcloud(
+    words        = load_df$word,
+    freq         = abs(load_df$loading),
+    colors       = color_vec,
+    scale        = c(4, 0.7),
+    random.order = FALSE
+  )
+}
+
+beta_map <- retained_effects %>%
+  mutate(pc_index = as.integer(str_remove(term, "PC")))
+
+par(mfrow = c(2,3))
+
+for (i in seq_len(nrow(beta_map))) {
+  pc_label <- beta_map$term[i]
+  beta_pc  <- beta_map$beta_internalizing[i]
+
+  title_text <- paste0(
+    pc_label,
+    ifelse(beta_pc > 0, " (↑ risk)", " (↓ risk)"),
+    ", β=", number(beta_pc, accuracy = 0.01)
+  )
+
+  plot_pc_wordcloud(pc_label, beta_pc)
+  title(main = title_text)
+}
+
+par(mfrow = c(1,1))
