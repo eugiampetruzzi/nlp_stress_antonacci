@@ -44,12 +44,7 @@ The topic modeling pipeline uses sentence-level **MALLET LDA**, participant-leve
   Sentence-level tokenization and creation of a **DLATK-ready corpus**.
 
 - `02_lda_to_topics.py`
-  Runs **MALLET LDA (~500 topics)** with default symmetric Dirichlet priors (α = 50/T, β = 0.01) and 1,000 Gibbs iterations.  
-  Exports:  
-  - topic–word distributions  
-  - sentence-level topic proportions  
-  - participant-level aggregated topic distributions  
-  *(Outputs are analyzed in `LDA_Analyses.Rmd`.)*
+  Runs **MALLET LDA (~500 topics)**. Exports: topic–word distributions, sentence-level topic proportions, and participant-level aggregated topic distributions.  
 
 ---
 
